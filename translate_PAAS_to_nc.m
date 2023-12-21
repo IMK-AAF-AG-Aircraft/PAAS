@@ -23,26 +23,28 @@ function translate_PAAS_to_nc(campaign,savefolder,savefilename, ...
 
 
     %% 1. Create file with variable
-    nccreate(filename,'time', 'Dimensions', {'time',size(time',1),'y1',size(time',2)}, 'FillValue','disable');
-    nccreate(filename,'time_highres', 'Dimensions', {'time_highres',size(time_highres',1),'y2',size(time_highres',2)}, 'FillValue','disable');
-    nccreate(filename,'b_abs', 'Dimensions', {'time',size(b_abs',1),'y2',size(b_abs',2)}, 'FillValue','disable');
-    nccreate(filename,'b_abs_highres', 'Dimensions', {'time_highres',size(b_abs_highres',1),'y2',size(b_abs_highres',2)}, 'FillValue','disable');
-    
+    nccreate(filename,'time', 'Dimensions', {'time',size(time',1),'y1',1}, 'FillValue','disable');
+    for i = 1:length(laser_wavelength)
+        nccreate(filename,['time_highres_',num2str(laser_wavelength(i))], 'Dimensions', {'time_highres',size(time_highres',1),'y1',1}, 'FillValue','disable');
+        nccreate(filename,['b_abs_',num2str(laser_wavelength(i))], 'Dimensions', {'time',size(b_abs',1),'y1',1}, 'FillValue','disable');
+        nccreate(filename,['b_abs_highres_',num2str(laser_wavelength(i))], 'Dimensions', {'time_highres',size(b_abs_highres',1),'y1',1}, 'FillValue','disable');
+    end
 
     %% 2. write in file
     ncwrite(filename,'time',posixtime(time'))
         ncwriteatt(filename,'time','unit','seconds since 1970-01-01 00:00:00');
         ncwriteatt(filename,'time','long name','Time axis for b_abs variable. The time axis is the same for all lasers.');
-    ncwrite(filename,'time_highres',posixtime(time_highres'))
-        ncwriteatt(filename,'time_highres','unit','seconds since 1970-01-01 00:00:00');
-        ncwriteatt(filename,'time_highres','long name','Time axis for b_abs_highres variable. Each laser has its own time axis.');
-    ncwrite(filename,'b_abs',b_abs')
-        ncwriteatt(filename,'b_abs','unit','M-1');
-        ncwriteatt(filename,'b_abs','long name','Absorption coefficient per wavelength.');
-    ncwrite(filename,'b_abs_highres',b_abs_highres')
-        ncwriteatt(filename,'b_abs_highres','unit','M-1');
-        ncwriteatt(filename,'b_abs_highres','long name','Absorption coefficient in high resolution per wavelength.');
-
+    for i = 1:length(laser_wavelength)
+        ncwrite(filename,['time_highres_',num2str(laser_wavelength(i))],posixtime(time_highres(i,:)'))
+            ncwriteatt(filename,['time_highres_',num2str(laser_wavelength(i))],'unit','seconds since 1970-01-01 00:00:00');
+            ncwriteatt(filename,['time_highres_',num2str(laser_wavelength(i))],'long name',['Time axis for b_abs_highres',num2str(laser_wavelength(i)),' variable.']);
+        ncwrite(filename,['b_abs_',num2str(laser_wavelength(i))],b_abs(i,:)')
+            ncwriteatt(filename,['b_abs_',num2str(laser_wavelength(i))],'unit','M-1');
+            ncwriteatt(filename,['b_abs_',num2str(laser_wavelength(i))],'long name',['Absorption coefficient for ',num2str(laser_wavelength(i)),' nm.']);
+        ncwrite(filename,['b_abs_highres_',num2str(laser_wavelength(i))],b_abs_highres(i,:)')
+            ncwriteatt(filename,['b_abs_highres_',num2str(laser_wavelength(i))],'unit','M-1');
+            ncwriteatt(filename,['b_abs_highres_',num2str(laser_wavelength(i))],'long name',['Absorption coefficient in high resolution for ',num2str(laser_wavelength(i)),' nm.']);
+    end
 
     %% 3. Write global attributes
     fileattrib(filename,"+w");
